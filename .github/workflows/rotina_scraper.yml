@@ -1,0 +1,39 @@
+name: Executar Scraper de Vagas Diário
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch: 
+
+jobs:
+  rodar-scraper:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v3
+
+      - name: Configurar o Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Dependências do Projeto
+        run: |
+          pip install requests beautifulsoup4 pandas sqlalchemy
+
+      - name: Executar o Robô de Vagas
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python scraper_linkedin.py
+
+      - name: Salvar Atualizações do Banco de Dados
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions Bot"
+          git add vagas_tech.db
+          git commit -m "🤖 [Bot] Banco de dados atualizado automaticamente" || echo "Nenhuma vaga nova hoje."
+          git push
